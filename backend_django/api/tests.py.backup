@@ -221,7 +221,7 @@ class SessionAndSubmissionTests(BaseAPITestCase):
         self.assertEqual(resp_anon.status_code, status.HTTP_403_FORBIDDEN)
 
         # Start session as authenticated user
-        start_url = reverse("sessions-start-session")  # action on viewset (detail=False)
+        start_url = reverse("sessions-start")  # action on viewset (detail=False)
         resp_start = self.client_user.post(start_url, {"crossword_id": cw.id, "time_limit_seconds": 0}, format="json")
         self.assertEqual(resp_start.status_code, 200)
         session_id = resp_start.data["id"]
@@ -230,7 +230,7 @@ class SessionAndSubmissionTests(BaseAPITestCase):
         self.assertEqual(session.crossword_id, cw.id)
 
         # Submit incorrect answer for across
-        submit_url = reverse("sessions-submit-answer", args=[session_id])  # action detail=True
+        submit_url = reverse("sessions-submit", args=[session_id])  # action detail=True
         resp_incorrect = self.client_user.post(
             submit_url, {"entry_id": e_across.id, "answer": "DOG"}, format="json"
         )
@@ -266,7 +266,7 @@ class SessionAndSubmissionTests(BaseAPITestCase):
         self.assertGreaterEqual(lb_before.accuracy, 0.0)
 
         # End the session and verify leaderboard completion and fastest time
-        end_url = reverse("sessions-end-session", args=[session_id])
+        end_url = reverse("sessions-end", args=[session_id])
         resp_end = self.client_user.post(end_url)
         self.assertEqual(resp_end.status_code, 200)
         session.refresh_from_db()
@@ -290,17 +290,17 @@ class SessionAndSubmissionTests(BaseAPITestCase):
         e1 = entries[0]
 
         # Start session
-        start_url = reverse("sessions-start-session")
+        start_url = reverse("sessions-start")
         resp_start = self.client_user.post(start_url, {"crossword_id": cw.id}, format="json")
         self.assertEqual(resp_start.status_code, 200)
         session_id = resp_start.data["id"]
 
         # End session
-        end_url = reverse("sessions-end-session", args=[session_id])
+        end_url = reverse("sessions-end", args=[session_id])
         self.assertEqual(self.client_user.post(end_url).status_code, 200)
 
         # Submitting after end should be rejected
-        submit_url = reverse("sessions-submit-answer", args=[session_id])
+        submit_url = reverse("sessions-submit", args=[session_id])
         resp = self.client_user.post(submit_url, {"entry_id": e1.id, "answer": "CAT"}, format="json")
         self.assertEqual(resp.status_code, 400)
         self.assertIn("Session has ended", str(resp.data))
@@ -318,29 +318,29 @@ class LeaderboardOrderingTests(BaseAPITestCase):
         self.assertTrue(client2.login(username="user2", password="pass1234"))
 
         # Start sessions
-        start_url = reverse("sessions-start-session")
+        start_url = reverse("sessions-start")
         s1 = self.client_user.post(start_url, {"crossword_id": cw.id}).data["id"]
         s2 = client2.post(start_url, {"crossword_id": cw.id}).data["id"]
 
         # user1 answers all correctly quickly
-        submit1 = reverse("sessions-submit-answer", args=[s1])
+        submit1 = reverse("sessions-submit", args=[s1])
         self.client_user.post(submit1, {"entry_id": e1.id, "answer": "CAT"})
         self.client_user.post(submit1, {"entry_id": e2.id, "answer": "CAR"})
         # Simulate earlier start for better fastest time for user1
         ps1 = PuzzleSession.objects.get(id=s1)
         ps1.started_at = timezone.now() - timezone.timedelta(seconds=5)
         ps1.save()
-        self.client_user.post(reverse("sessions-end-session", args=[s1]))
+        self.client_user.post(reverse("sessions-end", args=[s1]))
 
         # user2 answers correctly but slower and with some wrong attempts to lower accuracy
-        submit2 = reverse("sessions-submit-answer", args=[s2])
+        submit2 = reverse("sessions-submit", args=[s2])
         client2.post(submit2, {"entry_id": e1.id, "answer": "WRONG"})
         client2.post(submit2, {"entry_id": e1.id, "answer": "CAT"})
         client2.post(submit2, {"entry_id": e2.id, "answer": "CAR"})
         ps2 = PuzzleSession.objects.get(id=s2)
         ps2.started_at = timezone.now() - timezone.timedelta(seconds=10)
         ps2.save()
-        client2.post(reverse("sessions-end-session", args=[s2]))
+        client2.post(reverse("sessions-end", args=[s2]))
 
         # Leaderboard API ordering
         resp = self.client.get(self.url_leaderboard, {"crossword_id": cw.id})
