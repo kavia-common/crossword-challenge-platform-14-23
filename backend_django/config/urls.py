@@ -28,9 +28,9 @@ urlpatterns = [
 
 schema_view = get_schema_view(
    openapi.Info(
-      title="My API",
+      title="Crossword Challenge API",
       default_version='v1',
-      description="Test description",
+      description="API for authentication, crosswords, sessions, submissions, and leaderboard.",
    ),
    public=True,
    permission_classes=(permissions.AllowAny,),
