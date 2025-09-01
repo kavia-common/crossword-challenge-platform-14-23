@@ -57,7 +57,8 @@ class CrosswordEntry(TimestampedModel):
     """
     crossword = models.ForeignKey(Crossword, on_delete=models.CASCADE, related_name="entries")
     number = models.PositiveIntegerField(help_text="Clue number")
-    direction = models.CharField(max_length=5, choices=(("across", "Across"), ("down", "Down")))
+    # Direction string must fit the longest choice ("across" = 6)
+    direction = models.CharField(max_length=6, choices=(("across", "Across"), ("down", "Down")))
     clue = models.TextField()
     answer = models.CharField(max_length=128, help_text="Correct answer in uppercase A-Z only")
     row = models.PositiveIntegerField(help_text="Top-left row index for this entry (0-based)")
